@@ -12,7 +12,8 @@
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="TusFlores — Vende flores en minutos" />
   <meta name="twitter:description" content="La plataforma todo-en-uno para florerías en Latinoamérica." />
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23EC4899'/%3E%3Cg transform='translate(32,34)'%3E%3Crect x='-2' y='-14' width='4' height='18' rx='2' fill='%2386EFAC'/%3E%3Cellipse cx='-7' cy='-8' rx='5' ry='8' fill='%2386EFAC' transform='rotate(-30,-7,-8)'/%3E%3Cellipse cx='7' cy='-8' rx='5' ry='8' fill='%2386EFAC' transform='rotate(30,7,-8)'/%3E%3Cellipse cx='0' cy='-22' rx='7' ry='10' fill='%23FDF2F8'/%3E%3Cellipse cx='-8' cy='-17' rx='6' ry='9' fill='%23FBCFE8'/%3E%3Cellipse cx='8' cy='-17' rx='6' ry='9' fill='%23FBCFE8'/%3E%3Cellipse cx='0' cy='-20' rx='5' ry='8' fill='%23EC4899'/%3E%3C/g%3E%3C/svg%3E" />
+  <link rel="icon" type="image/png" href="favicon-32.png" sizes="32x32" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
@@ -98,12 +99,14 @@
     .nav-icon {
       width: 36px; height: 36px;
       border-radius: 12px;
-      background: linear-gradient(135deg, #10B981, #047857);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 8px 16px rgba(16,185,129,0.30);
+      overflow: hidden;
       flex-shrink: 0;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .nav-icon img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: block;
     }
 
     /* SVG inline para el sparkle */
@@ -2596,12 +2599,7 @@
   <nav>
     <div class="nav-logo">
       <div class="nav-icon">
-        <!-- Sparkles icon -->
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#fff;width:18px;height:18px">
-          <path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5z"/>
-          <path d="M5 3l.75 2.25L8 6l-2.25.75L5 9l-.75-2.25L2 6l2.25-.75z"/>
-          <path d="M19 15l.75 2.25L22 18l-2.25.75L19 21l-.75-2.25L16 18l2.25-.75z"/>
-        </svg>
+        <img src="logo_tusflores.webp" alt="tusflores logo" />
       </div>
       <span class="nav-brand">tusflores.app</span>
     </div>
