@@ -453,46 +453,20 @@
         }
 
         grid.innerHTML = items.map(function (item) {
-          var variants = variantsByParent[item.id] || [];
           var hasBio = item.bio && item.bio.trim().length > 0;
-          var hasExpand = hasBio || variants.length > 0;
 
-          var expandHtml = '';
-          if (hasExpand) {
-            var bioHtml = hasBio
-              ? '<div class="gallery-card-bio">' + escapeHtml(item.bio) + '</div>'
-              : '';
-            var variantsHtml = variants.length > 0
-              ? '<div class="gallery-card-variants">' +
-                  variants.map(function(v) {
-                    if (v.image_url) {
-                      return '<div class="gallery-tone-card">' +
-                        '<img class="gallery-tone-img" src="' + escapeHtml(v.image_url) + '" alt="' + escapeHtml(v.name) + '" loading="lazy"/>' +
-                        '<div class="gallery-tone-name">' + escapeHtml(v.name) + '</div>' +
-                      '</div>';
-                    }
-                    return '<span class="gallery-variant-pill">' + escapeHtml(v.name) + '</span>';
-                  }).join('') +
-                '</div>'
-              : '';
-            expandHtml = '<div class="gallery-card-expand">' + bioHtml + variantsHtml + '</div>';
-          }
+          var expandHtml = hasBio
+            ? '<div class="gallery-card-expand"><div class="gallery-card-bio">' + escapeHtml(item.bio) + '</div></div>'
+            : '';
 
-          return '<div class="gallery-card" data-id="' + escapeHtml(item.id) + '" data-expandable="' + (hasExpand ? '1' : '0') + '">' +
+          return '<div class="gallery-card" data-id="' + escapeHtml(item.id) + '" data-expandable="' + (hasBio ? '1' : '0') + '">' +
             '<div class="gallery-card-img-wrap">' +
               '<img class="gallery-card-img" src="' + escapeHtml(item.image_url) + '" alt="' + escapeHtml(item.name) + '" loading="lazy" />' +
             '</div>' +
             '<div class="gallery-card-body">' +
               '<div class="gallery-card-name">' + escapeHtml(item.name) + '</div>' +
               '<div class="gallery-card-group">' + escapeHtml(item.group_name) + '</div>' +
-              (hasExpand
-                ? '<div class="gallery-card-has-more">' +
-                    (variants.length > 0 ? variants.length + ' tonos' : '') +
-                    (hasBio && variants.length > 0 ? ' · ' : '') +
-                    (hasBio ? 'bio' : '') +
-                  '</div>'
-                : '') +
-              (hasExpand ? '<div class="gallery-card-chevron">' + chevronSvg() + '</div>' : '') +
+              (hasBio ? '<div class="gallery-card-chevron">' + chevronSvg() + '</div>' : '') +
             '</div>' +
             expandHtml +
           '</div>';
