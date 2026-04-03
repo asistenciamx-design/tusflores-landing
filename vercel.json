@@ -1,4 +1,7 @@
 {
+  "rewrites": [
+    { "source": "/galeria", "destination": "/galeria.html" }
+  ],
   "headers": [
     {
       "source": "/(.*)",
