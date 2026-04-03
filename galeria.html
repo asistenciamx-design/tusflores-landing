@@ -511,35 +511,57 @@
 
       var headers = { 'apikey': ANON_KEY, 'Authorization': 'Bearer ' + ANON_KEY };
       Promise.all([
-        // Categorías principales con imagen (incluye bio e id)
+        // Categorías principales con imagen
         fetch(SUPABASE_URL + '/rest/v1/categories?image_url=not.is.null&is_active=eq.true&select=id,name,group_name,image_url,bio,sort_order&order=group_name.asc,sort_order.asc', { headers: headers }).then(function(r){ return r.json(); }),
-        // Sub_categories activas — nombre, bio y parent_id
-        fetch(SUPABASE_URL + '/rest/v1/sub_categories?is_active=eq.true&select=name,bio,parent_id&order=name.asc', { headers: headers }).then(function(r){ return r.json(); })
+        // Sub_categories con imagen (tulipanes rosa, morados, etc.) — son también cards
+        fetch(SUPABASE_URL + '/rest/v1/sub_categories?image_url=not.is.null&is_active=eq.true&select=id,name,image_url,bio,parent_id,categories!inner(group_name,sort_order)&order=name.asc', { headers: headers }).then(function(r){ return r.json(); }),
+        // Tonos (sub_colors) — solo nombre, agrupados por parent_id (sub_category)
+        fetch(SUPABASE_URL + '/rest/v1/sub_colors?select=name,parent_id&order=name.asc', { headers: headers }).then(function(r){ return r.json(); })
       ])
       .then(function (results) {
         var cats = Array.isArray(results[0]) ? results[0] : [];
         var subs = Array.isArray(results[1]) ? results[1] : [];
+        var tones = Array.isArray(results[2]) ? results[2] : [];
 
-        // Build variants map (name + bio)
-        subs.forEach(function(s) {
-          if (!s.parent_id) return;
-          if (!variantsByParent[s.parent_id]) variantsByParent[s.parent_id] = [];
-          variantsByParent[s.parent_id].push(s);
+        // Build tones map keyed by sub_category id
+        tones.forEach(function(t) {
+          if (!t.parent_id) return;
+          if (!variantsByParent[t.parent_id]) variantsByParent[t.parent_id] = [];
+          variantsByParent[t.parent_id].push(t);
         });
 
-        if (cats.length === 0) {
+        // Normalize subs into same shape as cats
+        var subItems = subs.map(function(s) {
+          return {
+            id: s.id,
+            name: s.name,
+            image_url: s.image_url,
+            bio: s.bio,
+            group_name: s.categories ? s.categories.group_name : 'Otras',
+            sort_order: s.categories ? s.categories.sort_order : 999
+          };
+        });
+
+        // Merge: categories first, then sub_categories with image
+        var allData = cats.concat(subItems).sort(function(a, b) {
+          if (a.group_name < b.group_name) return -1;
+          if (a.group_name > b.group_name) return 1;
+          return (a.sort_order || 0) - (b.sort_order || 0);
+        });
+
+        if (allData.length === 0) {
           grid.innerHTML = '<div class="gallery-empty"><strong>Galería en construcción</strong>Estamos preparando las primeras flores.<br/>Vuelve pronto — la ampliamos cada día.</div>';
           if (countEl) countEl.innerHTML = '';
           return;
         }
-        allItems = cats;
+        allItems = allData;
 
         // Stats
         var seen = {}, groups = [];
-        cats.forEach(function (item) {
+        allData.forEach(function(item) {
           if (!seen[item.group_name]) { seen[item.group_name] = true; groups.push(item.group_name); }
         });
-        if (statTotal) statTotal.textContent = cats.length;
+        if (statTotal) statTotal.textContent = allData.length;
         if (statGroups) statGroups.textContent = groups.length;
 
         renderFilters(groups);
