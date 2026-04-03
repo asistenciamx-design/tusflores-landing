@@ -188,6 +188,62 @@
       color: #EC4899; background: #fdf2f8; padding: 3px 8px; border-radius: 6px;
     }
 
+    /* ── expand panel ──────────────────────────── */
+    .gallery-card { cursor: pointer; }
+
+    .gallery-card-expand {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.4s ease;
+    }
+    .gallery-card-expand.open { max-height: 600px; }
+
+    .gallery-card-bio {
+      padding: 12px 14px 0;
+      font-size: 13px;
+      line-height: 1.7;
+      color: #4b5563;
+      border-top: 1px solid #f3f4f6;
+    }
+
+    .gallery-card-variants {
+      padding: 10px 14px 14px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .gallery-variant-pill {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 100px;
+      background: #fdf2f8;
+      color: #be185d;
+      border: 1px solid #fce7f3;
+      white-space: nowrap;
+    }
+
+    .gallery-card-chevron {
+      position: absolute;
+      bottom: 10px; right: 10px;
+      width: 20px; height: 20px;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(236,72,153,0.10);
+      border-radius: 50%;
+      transition: transform 0.3s;
+    }
+    .gallery-card-chevron svg { width: 10px; height: 10px; stroke: #EC4899; }
+    .gallery-card.expanded .gallery-card-chevron { transform: rotate(180deg); }
+
+    .gallery-card-body { position: relative; }
+
+    /* has-expand indicator */
+    .gallery-card-has-more {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: 10px; font-weight: 700; color: #EC4899;
+      margin-top: 4px; letter-spacing: 0.3px;
+    }
+
     /* states */
     .gallery-loading { display: flex; justify-content: center; padding: 80px; grid-column: 1 / -1; }
     .gallery-spinner { width: 36px; height: 36px; border: 3px solid #f3f4f6; border-top-color: #EC4899; border-radius: 50%; animation: spin 0.8s linear infinite; }
@@ -347,13 +403,20 @@
       var countEl = document.getElementById('galleryCount');
       var statTotal = document.getElementById('statTotal');
       var statGroups = document.getElementById('statGroups');
+      // allItems: solo categorías principales con imagen
       var allItems = [];
+      // variantsByParent: { parentId: [{name, ...}] }
+      var variantsByParent = {};
       var activeGroup = 'Todas';
 
       function escapeHtml(str) {
         var div = document.createElement('div');
         div.textContent = str || '';
         return div.innerHTML;
+      }
+
+      function chevronSvg() {
+        return '<svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
       }
 
       function renderCards(items) {
@@ -364,17 +427,57 @@
           grid.innerHTML = '<div class="gallery-empty"><strong>Sin resultados</strong>No hay flores en esta categoría aún.<br/>Estamos ampliando la galería constantemente.</div>';
           return;
         }
+
         grid.innerHTML = items.map(function (item) {
-          return '<div class="gallery-card">' +
+          var variants = variantsByParent[item.id] || [];
+          var hasBio = item.bio && item.bio.trim().length > 0;
+          var hasExpand = hasBio || variants.length > 0;
+
+          var expandHtml = '';
+          if (hasExpand) {
+            var bioHtml = hasBio
+              ? '<div class="gallery-card-bio">' + escapeHtml(item.bio) + '</div>'
+              : '';
+            var variantsHtml = variants.length > 0
+              ? '<div class="gallery-card-variants">' +
+                  variants.map(function(v) {
+                    return '<span class="gallery-variant-pill">' + escapeHtml(v.name) + '</span>';
+                  }).join('') +
+                '</div>'
+              : '';
+            expandHtml = '<div class="gallery-card-expand">' + bioHtml + variantsHtml + '</div>';
+          }
+
+          return '<div class="gallery-card" data-id="' + escapeHtml(item.id) + '" data-expandable="' + (hasExpand ? '1' : '0') + '">' +
             '<div class="gallery-card-img-wrap">' +
               '<img class="gallery-card-img" src="' + escapeHtml(item.image_url) + '" alt="' + escapeHtml(item.name) + '" loading="lazy" />' +
             '</div>' +
             '<div class="gallery-card-body">' +
               '<div class="gallery-card-name">' + escapeHtml(item.name) + '</div>' +
               '<div class="gallery-card-group">' + escapeHtml(item.group_name) + '</div>' +
+              (hasExpand
+                ? '<div class="gallery-card-has-more">' +
+                    (variants.length > 0 ? variants.length + ' tonos' : '') +
+                    (hasBio && variants.length > 0 ? ' · ' : '') +
+                    (hasBio ? 'bio' : '') +
+                  '</div>'
+                : '') +
+              (hasExpand ? '<div class="gallery-card-chevron">' + chevronSvg() + '</div>' : '') +
             '</div>' +
+            expandHtml +
           '</div>';
         }).join('');
+
+        // Attach expand toggle
+        grid.querySelectorAll('.gallery-card[data-expandable="1"]').forEach(function (card) {
+          card.addEventListener('click', function () {
+            var panel = card.querySelector('.gallery-card-expand');
+            if (!panel) return;
+            var isOpen = panel.classList.contains('open');
+            panel.classList.toggle('open', !isOpen);
+            card.classList.toggle('expanded', !isOpen);
+          });
+        });
       }
 
       function renderFilters(groups) {
@@ -394,42 +497,37 @@
         });
       }
 
-      // Fetch both categories and sub_categories that have images
       var headers = { 'apikey': ANON_KEY, 'Authorization': 'Bearer ' + ANON_KEY };
       Promise.all([
-        fetch(SUPABASE_URL + '/rest/v1/categories?image_url=not.is.null&is_active=eq.true&select=name,group_name,image_url,sort_order&order=group_name.asc,sort_order.asc', { headers: headers }).then(function(r){ return r.json(); }),
-        fetch(SUPABASE_URL + '/rest/v1/sub_categories?image_url=not.is.null&is_active=eq.true&select=name,image_url,parent_id,categories!inner(group_name,sort_order)&order=name.asc', { headers: headers }).then(function(r){ return r.json(); })
+        // Categorías principales con imagen (incluye bio e id)
+        fetch(SUPABASE_URL + '/rest/v1/categories?image_url=not.is.null&is_active=eq.true&select=id,name,group_name,image_url,bio,sort_order&order=group_name.asc,sort_order.asc', { headers: headers }).then(function(r){ return r.json(); }),
+        // Todas las sub_categories activas (para agrupar por parent_id, solo nombre)
+        fetch(SUPABASE_URL + '/rest/v1/sub_categories?is_active=eq.true&select=name,parent_id&order=name.asc', { headers: headers }).then(function(r){ return r.json(); })
       ])
       .then(function (results) {
         var cats = Array.isArray(results[0]) ? results[0] : [];
-        var subs = Array.isArray(results[1]) ? results[1].map(function(s) {
-          return {
-            name: s.name,
-            group_name: s.categories ? s.categories.group_name : 'Otras',
-            image_url: s.image_url,
-            sort_order: s.categories ? s.categories.sort_order : 999
-          };
-        }) : [];
+        var subs = Array.isArray(results[1]) ? results[1] : [];
 
-        var data = cats.concat(subs).sort(function(a,b){
-          if (a.group_name < b.group_name) return -1;
-          if (a.group_name > b.group_name) return 1;
-          return (a.sort_order || 0) - (b.sort_order || 0);
+        // Build variants map
+        subs.forEach(function(s) {
+          if (!s.parent_id) return;
+          if (!variantsByParent[s.parent_id]) variantsByParent[s.parent_id] = [];
+          variantsByParent[s.parent_id].push(s);
         });
 
-        if (data.length === 0) {
+        if (cats.length === 0) {
           grid.innerHTML = '<div class="gallery-empty"><strong>Galería en construcción</strong>Estamos preparando las primeras flores.<br/>Vuelve pronto — la ampliamos cada día.</div>';
           if (countEl) countEl.innerHTML = '';
           return;
         }
-        allItems = data;
+        allItems = cats;
 
         // Stats
         var seen = {}, groups = [];
-        data.forEach(function (item) {
+        cats.forEach(function (item) {
           if (!seen[item.group_name]) { seen[item.group_name] = true; groups.push(item.group_name); }
         });
-        if (statTotal) statTotal.textContent = data.length;
+        if (statTotal) statTotal.textContent = cats.length;
         if (statGroups) statGroups.textContent = groups.length;
 
         renderFilters(groups);
